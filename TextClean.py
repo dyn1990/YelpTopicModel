@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 Created on Thu May  3 11:39:13 2018
 
@@ -75,10 +75,17 @@ def remove_url(text):
 def remove_tweet(text):
     return(''.join(re.sub("(@[\w]+)|([Rr][Tt])", " ", text)))
 
+## Removing Yelp date time
+def remove_yelp(text):
+    text = re.sub("^Date & Time: [a-zA-Z]+, \d\\\\\/\d+\\\\\/\d+ @ \S+\n\n", "", text)
+    text = re.sub("\n", " ", text)
+    return text
+
 ## Removing Special Characters (punctuations)
 def remove_special_characters(text):
     text = re.sub('[^a-zA-Z0-9\s]', '', text)
     return text
+
 
 # # Lemmatizing text
 def lemmatize_text(text):
@@ -107,15 +114,17 @@ def remove_stopwords(text, is_lower_case=False):
 
 
 ## Text_cleaning
-def clean_text(corpus, html_stripping=True, contraction_expansion=True,
+def clean_corpus(corpus, html_stripping=True, contraction_expansion=True,
                accented_char_removal=True, text_lemmatization=True,
-               special_char_removal=True, stopword_removal=True,
+               special_char_removal=True, stopword_removal=True, yelp_removal=True,
                url_removal=True, tweet_removal=True, text_lower_case=True):
     
     cleaned_corpus = []
     
     for doc in corpus:
-        
+        if yelp_removal:
+            doc = remove_yelp(doc)
+
         if html_stripping:
             doc = strip_html_tags(doc)
         
@@ -159,6 +168,52 @@ def clean_text(corpus, html_stripping=True, contraction_expansion=True,
 
 
 
+## Text_cleaning
+def clean_text(doc, html_stripping=True, contraction_expansion=True,
+               accented_char_removal=True, text_lemmatization=True,
+               special_char_removal=True, stopword_removal=True, yelp_removal=True,
+               url_removal=True, tweet_removal=True, text_lower_case=True):
+        
+    if yelp_removal:
+        doc = remove_yelp(doc)
+
+    if html_stripping:
+        doc = strip_html_tags(doc)
+    
+    if accented_char_removal:
+        doc = remove_accented_chars(doc)
+        
+    if contraction_expansion:
+        doc = expand_contractions(doc)
+        
+    if text_lower_case:
+        doc = doc.lower()
+        
+    if url_removal:
+        doc = remove_url(doc)
+        
+    if tweet_removal:
+        doc = remove_tweet(doc)
+        
+    # remove extra newlines
+    doc = re.sub(r'[\r|\n|\r\n]+', ' ',doc)
+    # insert spaces between special characters to isolate them    
+    special_char_pattern = re.compile(r'([{.(-)!}])')
+    doc = special_char_pattern.sub(" \\1 ", doc)
+    
+    if text_lemmatization:
+        doc = lemmatize_text(doc)
+        
+    if special_char_removal:
+        doc = remove_special_characters(doc)  
+        
+    # remove extra whitespace
+    doc = re.sub(' +', ' ', doc)
+    
+    if stopword_removal:
+        doc = remove_stopwords(doc, is_lower_case=text_lower_case)
+                
+    return doc
 
 
 
